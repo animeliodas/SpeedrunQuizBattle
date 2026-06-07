@@ -1400,6 +1400,8 @@ function setCardsEnabled(en) {
 
 function cardClick(choice, event) {
   if (waitSwap || !gameStarted) return;
+  // Защита от дегенеративного кадра: пул должен содержать 2 РАЗНЫЕ игры
+  if (pool.length < 2 || idx1 === idx2) return;
 
   if (event) spawnRipple(document.getElementById(`card${choice}`), event);
 
@@ -1461,18 +1463,43 @@ function cardClick(choice, event) {
   waitSwap = true;
   setCardsEnabled(false);
 
-  swapTimer = setTimeout(() => {
-    card1.classList.remove('correct','wrong','draw');
-    card2.classList.remove('correct','wrong','draw');
-    // Убираем сыгравшую карточку; idx1 уже скорректируется внутри retireCard
-    retireCard(retireIdx);
-    // Берём следующую карточку уже из обновлённого пула
-    idx2 = nextIndex(idx1);
-    showCard(idx1, 1, false);
-    showCard(idx2, 2, true);
-    waitSwap = false;
-    setCardsEnabled(true);
-  }, SWAP_DELAY);
+  swapTimer = setTimeout(() => doSwap(retireIdx), SWAP_DELAY);
+}
+
+// Замена карты после хода. Устойчив к временному опустошению пула:
+// если в пуле нет 2 РАЗНЫХ игр, ждём фонового пополнения, а не зависаем.
+async function doSwap(retireIdx) {
+  const card1 = document.getElementById('card1');
+  const card2 = document.getElementById('card2');
+  card1.classList.remove('correct','wrong','draw');
+  card2.classList.remove('correct','wrong','draw');
+
+  // Убираем сыгравшую карточку; idx1 скорректируется внутри retireCard,
+  // retireCard сам запустит refillPool при нехватке.
+  retireCard(retireIdx);
+
+  // Гарантируем минимум 2 разные игры перед показом следующей пары.
+  if (pool.length < 2) {
+    let waited = 0;
+    while (pool.length < 2 && waited < 20000) {
+      if (!_refilling) refillPool();   // подстраховка, если фон не идёт
+      await sleep(200);
+      waited += 200;
+    }
+    // Игра могла быть прервана (Home) пока ждали — выходим тихо
+    if (!gameStarted) return;
+    if (pool.length < 2) {             // совсем нет связи/данных
+      showToast(t('toast_load_fail'));
+      goToStart();
+      return;
+    }
+  }
+
+  idx2 = nextIndex(idx1);
+  showCard(idx1, 1, false);
+  showCard(idx2, 2, true);
+  waitSwap = false;
+  setCardsEnabled(true);
 }
 
 /* ═══════════════════════════════════════════════════════════════
