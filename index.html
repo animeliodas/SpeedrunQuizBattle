@@ -152,7 +152,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 88px 0 20px;
+      /* верхний отступ уводит содержимое (в т.ч. lives) НИЖЕ фикс. панели языка */
+      padding: 44px 16px 0;
       flex-shrink: 0;
       gap: 12px;
     }
@@ -677,8 +678,9 @@ const MAX_POOL   = 20;   // сколько держим в активном пу
 ═══════════════════════════════════════════════════════════════ */
 let pool        = [];   // активный пул (текущие 20 загруженных игр)
 let masterIds   = [];   // полный НЕизменный список ID из файла (источник)
-let poolIds     = new Set(); // ID игр, что сейчас в пуле — защита от дублей
-let badIds      = new Set(); // ID без обложки/WR — чтобы не дёргать их повторно
+let poolIds     = new Set(); // slug'и игр в пуле — чтобы не fetch'ить повторно
+let poolApiIds  = new Set(); // apiId игр в пуле — дедуп по РЕАЛЬНОЙ игре (алиасы slug)
+let badIds      = new Set(); // ID без обложки/WR/дубль-алиас — не дёргать повторно
 let gameStarted = false;
 let waitSwap    = false;
 let score       = 0;
@@ -1147,7 +1149,7 @@ async function fetchOneBySlug(slug) {
   const primary = jl.data.runs[0].run.times.primary;
   if (!primary) return null;
 
-  return { id: slug, gameName, catName: catResult.name,
+  return { id: slug, apiId, gameName, catName: catResult.name,
            wrTime: primary, wrTimeSec: isoToSec(primary), image: coverURL };
 }
 
@@ -1195,8 +1197,13 @@ async function refillPool() {
     const id = pickRandomFreeId();
     if (!id) break;                 // свободных кандидатов нет
     const rec = await fetchOneBySlug(id);
-    if (rec) addToPool(rec);
-    else     badIds.add(id);        // нет обложки/WR/не найдено — больше не берём
+    if (rec) {
+      // addToPool отклонит контентный дубль (другой slug той же игры) →
+      // исключаем этот slug навсегда, чтобы не появлялся повторно
+      if (!addToPool(rec)) badIds.add(id);
+    } else {
+      badIds.add(id);               // нет обложки/WR/не найдено — больше не берём
+    }
     await sleep(300);
   }
   _refilling = false;
@@ -1206,7 +1213,10 @@ async function refillPool() {
    POOL
 ═══════════════════════════════════════════════════════════════ */
 function addToPool(rec) {
+  // Дедуп по РЕАЛЬНОЙ игре: разные slug могут вести к одному apiId.
+  if (poolApiIds.has(rec.apiId)) return false;
   poolIds.add(rec.id);
+  poolApiIds.add(rec.apiId);
   pool.push(rec);
   // Прогресс загрузки стартового пула считаем по его размеру
   const loaded = Math.min(pool.length, MAX_POOL);
@@ -1215,12 +1225,13 @@ function addToPool(rec) {
   if (sub) sub.textContent = t('loaded', { n: loaded, total: MAX_POOL });
   updatePoolCounter();
   if (!gameStarted) tryStartGame();
+  return true;
 }
 
 // Убираем сыгравшую игру из пула; её ID снова доступен источнику.
 function retireCard(index) {
   const rec = pool[index];
-  if (rec) poolIds.delete(rec.id); // вернуть в источник для будущего добора
+  if (rec) { poolIds.delete(rec.id); poolApiIds.delete(rec.apiId); } // вернуть в источник
   pool.splice(index, 1);
   // После splice корректируем только индексы, что сместились из-за удаления
   if (idx1 > index) idx1--;
