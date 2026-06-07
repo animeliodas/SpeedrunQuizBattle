@@ -336,9 +336,11 @@
       min-height: 1.3em;
     }
     .card-img-wrap {
-      flex: 1;
-      min-height: 0;
-      max-height: 340px;  /* не растягиваем бесконечно на больших экранах */
+      /* ФИКСИРОВАННАЯ высота: размер картинки не должен менять высоту карты.
+         Иначе широкая (landscape) обложка делала карту ниже -> "панель
+         уменьшается по вертикали". */
+      flex: 0 0 auto;
+      height: clamp(200px, 40vh, 340px);
       border-radius: 10px;
       overflow: hidden;
       background: #111622;
@@ -347,8 +349,9 @@
       justify-content: center;
     }
     .card-img {
-      width: 100%; height: 100%;
-      object-fit: contain;
+      max-width: 100%; max-height: 100%;
+      width: auto; height: auto;
+      object-fit: contain;   /* вписываем целиком, без обрезки */
       display: none;
     }
     .card-img.loaded { display: block; }
@@ -531,7 +534,7 @@
       }
       .card { max-width: 100%; max-height: none; }  /* на мобиле высота свободная */
       .vs-col { flex-direction: row; gap: 20px; justify-content: center; }
-      .card-img-wrap { min-height: 140px; max-height: 180px; }
+      .card-img-wrap { height: clamp(120px, 22vh, 180px); }
       .modes-grid { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; margin: 0 auto; }
       .mode-card { width: 100%; }
     }
@@ -1189,6 +1192,8 @@ function addToPool(rec) {
   poolIds.add(rec.id);
   poolApiIds.add(rec.apiId);
   pool.push(rec);
+  // Прогреваем кэш обложки заранее, чтобы при показе карты она была мгновенно
+  if (rec.image) { const warm = new Image(); warm.src = rec.image; }
   // Прогресс загрузки стартового пула считаем по его размеру
   const loaded = Math.min(pool.length, MAX_POOL);
   setProgress(Math.min(100, loaded / MAX_POOL * 100));
