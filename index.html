@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -152,7 +152,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 20px 0;
+      padding: 12px 88px 0 20px;
       flex-shrink: 0;
       gap: 12px;
     }
@@ -488,6 +488,38 @@
     }
     #toast.show { display: block; opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ── Language selector ── */
+    #lang-select {
+      position: fixed; top: 8px; right: 10px;
+      z-index: 350;
+      background: var(--bg2);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+    #lang-select:hover { border-color: var(--accent2); }
+
+    /* ── Home button (game header) ── */
+    .home-btn {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 10px;
+      font-size: 18px;
+      line-height: 1;
+      padding: 6px 12px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform .15s, border-color .2s, background .2s;
+    }
+    .home-btn:hover { transform: translateY(-2px); border-color: var(--accent2); background: var(--card-hover); }
+    .home-btn:active { transform: translateY(0); }
+
     /* ── Mobile ── */
     @media (max-width: 640px) {
       .arena {
@@ -509,48 +541,51 @@
 <div id="progress-bar"></div>
 <div id="toast"></div>
 
+<!-- Language selector -->
+<select id="lang-select" onchange="setLang(this.value)" aria-label="Language"></select>
+
 <!-- Loading -->
 <div id="loading">
   <div class="spinner"></div>
-  <h2>Загрузка игр…</h2>
-  <div id="loading-sub">Подключаемся к speedrun.com</div>
+  <h2 data-i18n="loading_title">Loading games…</h2>
+  <div id="loading-sub" data-i18n="loading_sub">Connecting to speedrun.com</div>
 </div>
 
 <!-- ══ START SCREEN ══ -->
 <div class="screen" id="start-screen">
   <div class="start-logo">
     <div class="title">SPEEDRUN QUIZ BATTLE</div>
-    <div class="subtitle">Чей мировой рекорд быстрее?</div>
+    <div class="subtitle" data-i18n="subtitle">Whose world record is faster?</div>
   </div>
 
   <div class="modes-grid">
 
     <div class="mode-card endless" onclick="startGame('endless')">
       <span class="mode-icon">∞</span>
-      <div class="mode-name">Бесконечный</div>
-      <div class="mode-desc">
-        Играй без ограничений.<br>
-        +1 за верный ответ,<br>
-        −1 за неверный.
+      <div class="mode-name" data-i18n="mode_endless_name">Endless</div>
+      <div class="mode-desc" data-i18n-html="mode_endless_desc">
+        Play with no limits.<br>
+        +1 for a correct answer,<br>
+        −1 for a wrong one.
       </div>
     </div>
 
     <div class="mode-card normal" onclick="startGame('normal')">
       <span class="mode-icon">❤️❤️❤️</span>
-      <div class="mode-name">Нормальный</div>
-      <div class="mode-desc">
-        3 жизни.<br>
-        +1 за верный ответ,<br>
-        ошибка = −1 жизнь.
+      <div class="mode-name" data-i18n="mode_normal_name">Normal</div>
+      <div class="mode-desc" data-i18n-html="mode_normal_desc">
+        3 lives.<br>
+        +1 for a correct answer,<br>
+        a mistake = −1 life.
       </div>
     </div>
 
     <div class="mode-card hardcore" onclick="startGame('hardcore')">
       <span class="mode-icon">💔</span>
-      <div class="mode-name">Хардкор</div>
-      <div class="mode-desc">
-        Одна ошибка — конец игры.<br>
-        +1 за каждый<br>верный ответ.
+      <div class="mode-name" data-i18n="mode_hardcore_name">Hardcore</div>
+      <div class="mode-desc" data-i18n-html="mode_hardcore_desc">
+        One mistake ends the game.<br>
+        +1 for each<br>correct answer.
       </div>
     </div>
 
@@ -562,6 +597,7 @@
 
   <!-- Header -->
   <div class="game-header">
+    <button class="home-btn" id="home-btn" onclick="goToStart()" data-i18n-title="home_title" title="Back to home">🏠</button>
     <div class="game-logo">SQB</div>
     <div id="lives-bar"></div>
   </div>
@@ -571,7 +607,7 @@
 
   <!-- Score center -->
   <div class="score-center">
-    <div class="score-lbl">Счёт</div>
+    <div class="score-lbl" data-i18n="score">Score</div>
     <div id="score">0</div>
   </div>
 
@@ -615,15 +651,15 @@
 
 <!-- ══ GAME OVER SCREEN ══ -->
 <div class="screen" id="over-screen">
-  <div class="over-title">Игра окончена</div>
+  <div class="over-title" data-i18n="over_title">Game Over</div>
   <div class="over-mode" id="over-mode-label"></div>
   <div class="over-score-wrap">
-    <div class="over-score-lbl">Счёт</div>
+    <div class="over-score-lbl" data-i18n="score">Score</div>
     <div class="over-score" id="over-score">0</div>
   </div>
   <div class="over-buttons">
-    <button class="btn btn-primary"    onclick="restartGame()">Играть снова</button>
-    <button class="btn btn-secondary"  onclick="goToStart()">На главную</button>
+    <button class="btn btn-primary"    onclick="restartGame()" data-i18n="play_again">Play Again</button>
+    <button class="btn btn-secondary"  onclick="goToStart()" data-i18n="home">Home</button>
   </div>
 </div>
 
@@ -653,6 +689,304 @@ let queue = [], queuePos = 0;
 let swapTimer   = null;
 let _apiMethod  = 'direct';
 let _refilling  = false; // флаг фонового пополнения
+
+/* ═══════════════════════════════════════════════════════════════
+   I18N — English base + baked dictionaries, auto-detect + switcher.
+   Game titles/categories come from speedrun.com API and stay English.
+═══════════════════════════════════════════════════════════════ */
+const LANG_NAMES = {
+  en: 'English', ru: 'Русский', uk: 'Українська', de: 'Deutsch',
+  es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português',
+  zh: '中文', ja: '日本語'
+};
+
+const I18N = {
+  en: {
+    subtitle: 'Whose world record is faster?',
+    mode_endless_name: 'Endless',
+    mode_endless_desc: 'Play with no limits.<br>+1 for a correct answer,<br>−1 for a wrong one.',
+    mode_normal_name: 'Normal',
+    mode_normal_desc: '3 lives.<br>+1 for a correct answer,<br>a mistake = −1 life.',
+    mode_hardcore_name: 'Hardcore',
+    mode_hardcore_desc: 'One mistake ends the game.<br>+1 for each<br>correct answer.',
+    score: 'Score',
+    loading_title: 'Loading games…',
+    loading_sub: 'Connecting to speedrun.com',
+    over_title: 'Game Over',
+    play_again: 'Play Again',
+    home: 'Home',
+    home_title: 'Back to home',
+    toast_load_fail: 'Failed to load games. Check Pre-created.json',
+    loaded: 'Loaded: {n} / {total}',
+    pool_with: '⏳ In pool: {n}  |  In reserve: {r}',
+    pool_done: '✓ In pool: {n} games',
+    mode_label_endless: '∞ Endless',
+    mode_label_normal: '❤️ Normal',
+    mode_label_hardcore: '💔 Hardcore'
+  },
+  ru: {
+    subtitle: 'Чей мировой рекорд быстрее?',
+    mode_endless_name: 'Бесконечный',
+    mode_endless_desc: 'Играй без ограничений.<br>+1 за верный ответ,<br>−1 за неверный.',
+    mode_normal_name: 'Нормальный',
+    mode_normal_desc: '3 жизни.<br>+1 за верный ответ,<br>ошибка = −1 жизнь.',
+    mode_hardcore_name: 'Хардкор',
+    mode_hardcore_desc: 'Одна ошибка — конец игры.<br>+1 за каждый<br>верный ответ.',
+    score: 'Счёт',
+    loading_title: 'Загрузка игр…',
+    loading_sub: 'Подключаемся к speedrun.com',
+    over_title: 'Игра окончена',
+    play_again: 'Играть снова',
+    home: 'На главную',
+    home_title: 'На главную',
+    toast_load_fail: 'Не удалось загрузить игры. Проверьте Pre-created.json',
+    loaded: 'Загружено: {n} / {total}',
+    pool_with: '⏳ В пуле: {n}  |  В запасе: {r}',
+    pool_done: '✓ В пуле: {n} игр',
+    mode_label_endless: '∞ Бесконечный',
+    mode_label_normal: '❤️ Нормальный',
+    mode_label_hardcore: '💔 Хардкор'
+  },
+  uk: {
+    subtitle: 'Чий світовий рекорд швидший?',
+    mode_endless_name: 'Нескінченний',
+    mode_endless_desc: 'Грай без обмежень.<br>+1 за правильну відповідь,<br>−1 за неправильну.',
+    mode_normal_name: 'Звичайний',
+    mode_normal_desc: '3 життя.<br>+1 за правильну відповідь,<br>помилка = −1 життя.',
+    mode_hardcore_name: 'Хардкор',
+    mode_hardcore_desc: 'Одна помилка — кінець гри.<br>+1 за кожну<br>правильну відповідь.',
+    score: 'Рахунок',
+    loading_title: 'Завантаження ігор…',
+    loading_sub: 'Підключення до speedrun.com',
+    over_title: 'Гру завершено',
+    play_again: 'Грати знову',
+    home: 'На головну',
+    home_title: 'На головну',
+    toast_load_fail: 'Не вдалося завантажити ігри. Перевірте Pre-created.json',
+    loaded: 'Завантажено: {n} / {total}',
+    pool_with: '⏳ У пулі: {n}  |  У запасі: {r}',
+    pool_done: '✓ У пулі: {n} ігор',
+    mode_label_endless: '∞ Нескінченний',
+    mode_label_normal: '❤️ Звичайний',
+    mode_label_hardcore: '💔 Хардкор'
+  },
+  de: {
+    subtitle: 'Wessen Weltrekord ist schneller?',
+    mode_endless_name: 'Endlos',
+    mode_endless_desc: 'Spiele ohne Limit.<br>+1 für richtig,<br>−1 für falsch.',
+    mode_normal_name: 'Normal',
+    mode_normal_desc: '3 Leben.<br>+1 für richtig,<br>Fehler = −1 Leben.',
+    mode_hardcore_name: 'Hardcore',
+    mode_hardcore_desc: 'Ein Fehler beendet das Spiel.<br>+1 für jede<br>richtige Antwort.',
+    score: 'Punkte',
+    loading_title: 'Spiele werden geladen…',
+    loading_sub: 'Verbinde mit speedrun.com',
+    over_title: 'Spiel vorbei',
+    play_again: 'Nochmal spielen',
+    home: 'Startseite',
+    home_title: 'Zur Startseite',
+    toast_load_fail: 'Spiele konnten nicht geladen werden. Prüfe Pre-created.json',
+    loaded: 'Geladen: {n} / {total}',
+    pool_with: '⏳ Im Pool: {n}  |  In Reserve: {r}',
+    pool_done: '✓ Im Pool: {n} Spiele',
+    mode_label_endless: '∞ Endlos',
+    mode_label_normal: '❤️ Normal',
+    mode_label_hardcore: '💔 Hardcore'
+  },
+  es: {
+    subtitle: '¿De quién es el récord mundial más rápido?',
+    mode_endless_name: 'Infinito',
+    mode_endless_desc: 'Juega sin límites.<br>+1 por acierto,<br>−1 por error.',
+    mode_normal_name: 'Normal',
+    mode_normal_desc: '3 vidas.<br>+1 por acierto,<br>un error = −1 vida.',
+    mode_hardcore_name: 'Hardcore',
+    mode_hardcore_desc: 'Un error termina el juego.<br>+1 por cada<br>acierto.',
+    score: 'Puntos',
+    loading_title: 'Cargando juegos…',
+    loading_sub: 'Conectando con speedrun.com',
+    over_title: 'Fin del juego',
+    play_again: 'Jugar de nuevo',
+    home: 'Inicio',
+    home_title: 'Volver al inicio',
+    toast_load_fail: 'No se pudieron cargar los juegos. Revisa Pre-created.json',
+    loaded: 'Cargados: {n} / {total}',
+    pool_with: '⏳ En juego: {n}  |  En reserva: {r}',
+    pool_done: '✓ En juego: {n} juegos',
+    mode_label_endless: '∞ Infinito',
+    mode_label_normal: '❤️ Normal',
+    mode_label_hardcore: '💔 Hardcore'
+  },
+  fr: {
+    subtitle: 'Quel record du monde est le plus rapide ?',
+    mode_endless_name: 'Infini',
+    mode_endless_desc: 'Joue sans limite.<br>+1 pour une bonne réponse,<br>−1 pour une erreur.',
+    mode_normal_name: 'Normal',
+    mode_normal_desc: '3 vies.<br>+1 pour une bonne réponse,<br>une erreur = −1 vie.',
+    mode_hardcore_name: 'Hardcore',
+    mode_hardcore_desc: 'Une erreur met fin à la partie.<br>+1 pour chaque<br>bonne réponse.',
+    score: 'Score',
+    loading_title: 'Chargement des jeux…',
+    loading_sub: 'Connexion à speedrun.com',
+    over_title: 'Partie terminée',
+    play_again: 'Rejouer',
+    home: 'Accueil',
+    home_title: "Retour à l'accueil",
+    toast_load_fail: 'Impossible de charger les jeux. Vérifiez Pre-created.json',
+    loaded: 'Chargés : {n} / {total}',
+    pool_with: '⏳ En jeu : {n}  |  En réserve : {r}',
+    pool_done: '✓ En jeu : {n} jeux',
+    mode_label_endless: '∞ Infini',
+    mode_label_normal: '❤️ Normal',
+    mode_label_hardcore: '💔 Hardcore'
+  },
+  it: {
+    subtitle: 'Di chi è il record mondiale più veloce?',
+    mode_endless_name: 'Infinito',
+    mode_endless_desc: 'Gioca senza limiti.<br>+1 per risposta giusta,<br>−1 per quella sbagliata.',
+    mode_normal_name: 'Normale',
+    mode_normal_desc: '3 vite.<br>+1 per risposta giusta,<br>errore = −1 vita.',
+    mode_hardcore_name: 'Hardcore',
+    mode_hardcore_desc: 'Un errore termina la partita.<br>+1 per ogni<br>risposta giusta.',
+    score: 'Punti',
+    loading_title: 'Caricamento giochi…',
+    loading_sub: 'Connessione a speedrun.com',
+    over_title: 'Partita finita',
+    play_again: 'Gioca ancora',
+    home: 'Home',
+    home_title: 'Torna alla home',
+    toast_load_fail: 'Impossibile caricare i giochi. Controlla Pre-created.json',
+    loaded: 'Caricati: {n} / {total}',
+    pool_with: '⏳ In gioco: {n}  |  In riserva: {r}',
+    pool_done: '✓ In gioco: {n} giochi',
+    mode_label_endless: '∞ Infinito',
+    mode_label_normal: '❤️ Normale',
+    mode_label_hardcore: '💔 Hardcore'
+  },
+  pt: {
+    subtitle: 'De quem é o recorde mundial mais rápido?',
+    mode_endless_name: 'Infinito',
+    mode_endless_desc: 'Jogue sem limites.<br>+1 por acerto,<br>−1 por erro.',
+    mode_normal_name: 'Normal',
+    mode_normal_desc: '3 vidas.<br>+1 por acerto,<br>um erro = −1 vida.',
+    mode_hardcore_name: 'Hardcore',
+    mode_hardcore_desc: 'Um erro encerra o jogo.<br>+1 por cada<br>acerto.',
+    score: 'Pontos',
+    loading_title: 'Carregando jogos…',
+    loading_sub: 'Conectando ao speedrun.com',
+    over_title: 'Fim de jogo',
+    play_again: 'Jogar de novo',
+    home: 'Início',
+    home_title: 'Voltar ao início',
+    toast_load_fail: 'Falha ao carregar os jogos. Verifique Pre-created.json',
+    loaded: 'Carregados: {n} / {total}',
+    pool_with: '⏳ No pool: {n}  |  Na reserva: {r}',
+    pool_done: '✓ No pool: {n} jogos',
+    mode_label_endless: '∞ Infinito',
+    mode_label_normal: '❤️ Normal',
+    mode_label_hardcore: '💔 Hardcore'
+  },
+  zh: {
+    subtitle: '谁的世界纪录更快？',
+    mode_endless_name: '无尽',
+    mode_endless_desc: '无限畅玩。<br>答对 +1，<br>答错 −1。',
+    mode_normal_name: '普通',
+    mode_normal_desc: '3 条命。<br>答对 +1，<br>答错 = −1 条命。',
+    mode_hardcore_name: '硬核',
+    mode_hardcore_desc: '一次错误即结束游戏。<br>每答对一题<br>+1。',
+    score: '得分',
+    loading_title: '正在加载游戏…',
+    loading_sub: '正在连接 speedrun.com',
+    over_title: '游戏结束',
+    play_again: '再玩一次',
+    home: '主页',
+    home_title: '返回主页',
+    toast_load_fail: '无法加载游戏。请检查 Pre-created.json',
+    loaded: '已加载：{n} / {total}',
+    pool_with: '⏳ 池中：{n}  |  储备：{r}',
+    pool_done: '✓ 池中：{n} 个游戏',
+    mode_label_endless: '∞ 无尽',
+    mode_label_normal: '❤️ 普通',
+    mode_label_hardcore: '💔 硬核'
+  },
+  ja: {
+    subtitle: 'どちらの世界記録が速い？',
+    mode_endless_name: 'エンドレス',
+    mode_endless_desc: '無制限でプレイ。<br>正解で +1、<br>不正解で −1。',
+    mode_normal_name: 'ノーマル',
+    mode_normal_desc: 'ライフ3。<br>正解で +1、<br>ミスでライフ −1。',
+    mode_hardcore_name: 'ハードコア',
+    mode_hardcore_desc: '1回のミスでゲーム終了。<br>正解ごとに<br>+1。',
+    score: 'スコア',
+    loading_title: 'ゲームを読み込み中…',
+    loading_sub: 'speedrun.com に接続中',
+    over_title: 'ゲームオーバー',
+    play_again: 'もう一度プレイ',
+    home: 'ホーム',
+    home_title: 'ホームに戻る',
+    toast_load_fail: 'ゲームを読み込めませんでした。Pre-created.json を確認してください',
+    loaded: '読み込み: {n} / {total}',
+    pool_with: '⏳ プール: {n}  |  予備: {r}',
+    pool_done: '✓ プール: {n} ゲーム',
+    mode_label_endless: '∞ エンドレス',
+    mode_label_normal: '❤️ ノーマル',
+    mode_label_hardcore: '💔 ハードコア'
+  }
+};
+
+let lang = 'en';
+
+function t(key, vars) {
+  let s = (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+  if (vars) for (const k in vars) s = s.replace('{' + k + '}', vars[k]);
+  return s;
+}
+
+function detectLang() {
+  const saved = localStorage.getItem('sqb_lang');
+  if (saved && I18N[saved]) return saved;
+  const nav = (navigator.language || 'en').slice(0, 2).toLowerCase();
+  return I18N[nav] ? nav : 'en';
+}
+
+function applyI18n() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  updatePoolCounter();
+  // refresh result-screen mode label if visible
+  if (gameMode) {
+    const lbl = document.getElementById('over-mode-label');
+    if (lbl) lbl.textContent = t('mode_label_' + gameMode);
+  }
+}
+
+function buildLangSelect() {
+  const sel = document.getElementById('lang-select');
+  if (!sel) return;
+  sel.innerHTML = '';
+  for (const code in LANG_NAMES) {
+    const o = document.createElement('option');
+    o.value = code;
+    o.textContent = LANG_NAMES[code];
+    sel.appendChild(o);
+  }
+  sel.value = lang;
+}
+
+function setLang(l) {
+  lang = I18N[l] ? l : 'en';
+  localStorage.setItem('sqb_lang', lang);
+  const sel = document.getElementById('lang-select');
+  if (sel) sel.value = lang;
+  applyI18n();
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SCREENS
@@ -685,17 +1019,17 @@ function isoToSec(iso) {
 }
 
 function isoToDisplay(iso) {
-  const t  = isoToSec(iso);
-  const h  = Math.floor(t / 3600);
-  const m  = Math.floor((t % 3600) / 60);
-  const s  = Math.floor(t % 60);
-  const ms = Math.round((t % 1) * 1000);
-  let r = '';
-  if (h > 0) r += h + 'ч ';
-  if (m > 0 || h > 0) r += m + 'м ';
-  r += s + 'с';
-  if (ms > 0) r += ' ' + ms + 'мс';
-  return r.trim();
+  // Language-neutral speedrun format: H:MM:SS.mmm
+  const total = isoToSec(iso);
+  const h  = Math.floor(total / 3600);
+  const m  = Math.floor((total % 3600) / 60);
+  const s  = Math.floor(total % 60);
+  const ms = Math.round((total % 1) * 1000);
+  const pad = (n, l = 2) => String(n).padStart(l, '0');
+  let r = h > 0 ? h + ':' + pad(m) + ':' + pad(s)
+                : m + ':' + pad(s);
+  if (ms > 0) r += '.' + pad(ms, 3);
+  return r;
 }
 
 function setProgress(pct) {
@@ -707,9 +1041,9 @@ function updatePoolCounter() {
   if (!el) return;
   const reserve = allIds.length;
   if (reserve > 0)
-    el.textContent = '⏳ В пуле: ' + pool.length + '  |  В запасе: ' + reserve;
+    el.textContent = t('pool_with', { n: pool.length, r: reserve });
   else
-    el.textContent = '✓ В пуле: ' + pool.length + ' игр';
+    el.textContent = t('pool_done', { n: pool.length });
 }
 
 function showToast(msg, dur = 3000) {
@@ -876,7 +1210,7 @@ function addToPool(rec) {
   const loaded = Math.min(loadedIds.size, MAX_POOL);
   setProgress(Math.min(100, loaded / MAX_POOL * 100));
   const sub = document.getElementById('loading-sub');
-  if (sub) sub.textContent = 'Загружено: ' + loaded + ' / ' + MAX_POOL;
+  if (sub) sub.textContent = t('loaded', { n: loaded, total: MAX_POOL });
   updatePoolCounter();
   if (gameStarted) rebuildQueue();
   else tryStartGame();
@@ -967,13 +1301,16 @@ function restartGame() {
 }
 
 function goToStart() {
+  // Stop any pending swap so the game halts cleanly from any mode/state
+  if (swapTimer) { clearTimeout(swapTimer); swapTimer = null; }
+  gameStarted = false;
+  waitSwap    = false;
   showScreen('start-screen');
 }
 
 function gameOver() {
   // Заполняем экран результата
-  const modeNames = { endless: '∞ Бесконечный', normal: '❤️ Нормальный', hardcore: '💔 Хардкор' };
-  document.getElementById('over-mode-label').textContent = modeNames[gameMode] || '';
+  document.getElementById('over-mode-label').textContent = t('mode_label_' + gameMode) || '';
   const el = document.getElementById('over-score');
   el.textContent = score;
   el.className = 'over-score' + (score > 0 ? ' pos' : score < 0 ? ' neg' : '');
@@ -1118,13 +1455,13 @@ function cardClick(choice, event) {
       if (lives <= 0) {
         waitSwap = true;
         setCardsEnabled(false);
-        setTimeout(gameOver, 1200);
+        swapTimer = setTimeout(gameOver, 1200);
         return;
       }
     } else if (gameMode === 'hardcore') {
       waitSwap = true;
       setCardsEnabled(false);
-      setTimeout(gameOver, 1200);
+      swapTimer = setTimeout(gameOver, 1200);
       return;
     }
   }
@@ -1156,12 +1493,15 @@ function cardClick(choice, event) {
    INIT
 ═══════════════════════════════════════════════════════════════ */
 (async () => {
+  lang = detectLang();
+  buildLangSelect();
+  applyI18n();
   showScreen('start-screen');
   // Загружаем пул в фоне пока пользователь на старт-экране
   await loadPreCreated();
   document.getElementById('loading').style.display = 'none';
   if (pool.length < 2) {
-    showToast('Не удалось загрузить игры. Проверьте Pre-created.json');
+    showToast(t('toast_load_fail'));
   }
 })();
 </script>

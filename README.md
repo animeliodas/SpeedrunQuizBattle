@@ -1,40 +1,63 @@
 # 🎮 SPEEDRUN QUIZ BATTLE
 
-**Угадай, чей мировой рекорд быстрее!**
+**Guess whose world record is faster!**
 
-Перед тобой две случайные игры с [speedrun.com](https://speedrun.com).  
-На левой карточке **показано** время мирового рекорда.  
-На правой — оно **скрыто**.  
-Нажми на карточку с **более быстрым** рекордом — и проверь свою интуицию!
-
----
-
-## 🕹 Как играть
-
-1. Смотри на левую карточку — там указано реальное время рекорда.
-2. На правой карточке время скрыто (показано `???`).
-3. Кликни по карточке, которая, как тебе кажется, быстрее.
-4. Правильный ответ — `+1` к счёту, неправильный — `-1`.
-5. Новые пары игр подгружаются автоматически.
+You're shown two random games from [speedrun.com](https://speedrun.com).
+The left card **reveals** its world-record time.
+The right card keeps it **hidden**.
+Tap the card you think holds the **faster** record — and test your intuition!
 
 ---
 
-## 🎨 Фишки
+## 🕹 How to play
 
-- ✨ Живые анимации карточек и счёта.
-- 📈 Индикатор прогресса загрузки игр.
-- 🎲 Случайный порядок, без повторений подряд.
-- 📱 Адаптивный дизайн — играть удобно и на телефоне, и на ПК.
-- ⚡ Быстрая загрузка благодаря кешированию обложек.
-
----
-
-## 💡 Важно
-
-Игра загружает данные напрямую с публичного API speedrun.com.  
-При первом запуске может потребоваться 10–20 секунд, пока подтянутся первые игры.  
-Если у тебя уже есть `Pre-created.json` с большим списком — старт будет мгновенным.
+1. Look at the left card — it shows the real record time.
+2. The right card hides its time (shown as `???`).
+3. Click the card you think is faster.
+4. Correct answer — `+1` to your score, wrong answer — `-1`.
+5. New game pairs are loaded automatically.
 
 ---
 
-Приятной игры и пусть победит быстрейший! 🏁
+## 🎮 Game modes
+
+- **∞ Endless** — play with no limits. `+1` for a correct answer, `−1` for a wrong one.
+- **❤️ Normal** — 3 lives. `+1` for a correct answer, a mistake costs `−1` life.
+- **💔 Hardcore** — one mistake ends the game. `+1` for each correct answer.
+
+You can return to the home screen at any time with the 🏠 button in the game header.
+
+---
+
+## 🌍 Languages
+
+The interface is in **English by default** and auto-translates to your browser
+language when available. Use the selector in the top-right corner to switch
+manually. Bundled languages: English, Русский, Українська, Deutsch, Español,
+Français, Italiano, Português, 中文, 日本語.
+
+Game titles and categories come straight from the speedrun.com API and stay in
+their original (English) form.
+
+---
+
+## 🎨 Features
+
+- ✨ Lively card and score animations.
+- 📈 Loading progress indicator.
+- 🎲 Random order with no back-to-back repeats.
+- 🌍 Built-in localization with auto-detection.
+- 📱 Responsive design — comfortable on both phone and desktop.
+- ⚡ Fast start thanks to cover caching.
+
+---
+
+## 💡 Notes
+
+The game pulls data directly from the public speedrun.com API.
+The first launch may take 10–20 seconds while the first games load.
+If you already have a `Pre-created.json` with a large list, the start is instant.
+
+---
+
+Enjoy, and may the fastest win! 🏁
