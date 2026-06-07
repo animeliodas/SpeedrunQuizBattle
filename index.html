@@ -675,17 +675,16 @@ const MAX_POOL   = 20;   // сколько держим в активном пу
 /* ═══════════════════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════════════════ */
-let pool        = [];   // активный пул (текущие 20)
-let allIds      = [];   // все ID из файла, ещё не загруженные
-let loadedIds   = new Set(); // уже загруженные ID
-let totalIds    = 0;    // сколько всего ID в файле
+let pool        = [];   // активный пул (текущие 20 загруженных игр)
+let masterIds   = [];   // полный НЕизменный список ID из файла (источник)
+let poolIds     = new Set(); // ID игр, что сейчас в пуле — защита от дублей
+let badIds      = new Set(); // ID без обложки/WR — чтобы не дёргать их повторно
 let gameStarted = false;
 let waitSwap    = false;
 let score       = 0;
 let lives       = 3;
 let gameMode    = '';   // 'endless' | 'normal' | 'hardcore'
 let idx1 = -1, idx2 = -1;
-let queue = [], queuePos = 0;
 let swapTimer   = null;
 let _apiMethod  = 'direct';
 let _refilling  = false; // флаг фонового пополнения
@@ -1001,14 +1000,6 @@ function showScreen(id) {
 ═══════════════════════════════════════════════════════════════ */
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
 function isoToSec(iso) {
   if (!iso || !iso.startsWith('PT')) return 0;
   let s = iso.slice(2), h = 0, m = 0, sec = 0;
@@ -1039,9 +1030,10 @@ function setProgress(pct) {
 function updatePoolCounter() {
   const el = document.getElementById('pool-counter');
   if (!el) return;
-  const reserve = allIds.length;
-  if (reserve > 0)
-    el.textContent = t('pool_with', { n: pool.length, r: reserve });
+  // Источник (masterIds) постоянный. Пока пул не заполнен — показываем
+  // прогресс с размером источника, иначе короткий статус.
+  if (pool.length < MAX_POOL && masterIds.length > 0)
+    el.textContent = t('pool_with', { n: pool.length, r: masterIds.length });
   else
     el.textContent = t('pool_done', { n: pool.length });
 }
@@ -1160,7 +1152,8 @@ async function fetchOneBySlug(slug) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PRE-CREATED — случайные 20 из списка
+   PRE-CREATED — готовый список как НЕизменный источник.
+   Список не убывает: из него случайно добираем пул до MAX_POOL.
 ═══════════════════════════════════════════════════════════════ */
 async function loadPreCreated() {
   let ids = [];
@@ -1172,29 +1165,38 @@ async function loadPreCreated() {
   } catch (_) { return; }
   if (ids.length === 0) return;
 
-  shuffle(ids);
-  totalIds = ids.length;
-  allIds   = [...ids]; // полный перемешанный запас
+  masterIds = ids;            // источник, не модифицируем
   updatePoolCounter();
-
-  // Загружаем первые MAX_POOL штук
-  const first = allIds.splice(0, MAX_POOL);
-  for (const id of first) {
-    const rec = await fetchOneBySlug(id);
-    if (rec) addToPool(rec);
-    await sleep(300);
-  }
+  await refillPool();         // добиваем пул до MAX_POOL случайными играми
 }
 
-// Пополняем пул из запаса, заменяя сыгравшие игры
+// Случайный ID из источника, которого нет в пуле и который не «битый»
+function pickRandomFreeId() {
+  if (masterIds.length === 0) return null;
+  // Сначала пытаемся случайной выборкой (дёшево при большом списке)
+  for (let i = 0; i < 60; i++) {
+    const id = masterIds[Math.floor(Math.random() * masterIds.length)];
+    if (!poolIds.has(id) && !badIds.has(id)) return id;
+  }
+  // Fallback: линейный проход, если случайно не нашли свободный
+  for (const id of masterIds)
+    if (!poolIds.has(id) && !badIds.has(id)) return id;
+  return null; // все доступные ID уже в пуле — добор не нужен
+}
+
+// Добиваем пул случайными играми из источника (источник НЕ расходуется)
 async function refillPool() {
   if (_refilling) return;
   _refilling = true;
-  while (pool.length < MAX_POOL && allIds.length > 0) {
-    const id = allIds.shift();
-    if (loadedIds.has(id)) continue;
+  let guard = 0;
+  const maxTries = MAX_POOL * 30; // потолок на пропуски битых ID за один добор
+  while (pool.length < MAX_POOL && guard < maxTries) {
+    guard++;
+    const id = pickRandomFreeId();
+    if (!id) break;                 // свободных кандидатов нет
     const rec = await fetchOneBySlug(id);
     if (rec) addToPool(rec);
+    else     badIds.add(id);        // нет обложки/WR/не найдено — больше не берём
     await sleep(300);
   }
   _refilling = false;
@@ -1204,54 +1206,39 @@ async function refillPool() {
    POOL
 ═══════════════════════════════════════════════════════════════ */
 function addToPool(rec) {
-  loadedIds.add(rec.id);
+  poolIds.add(rec.id);
   pool.push(rec);
-  // Прогресс считаем по первым MAX_POOL
-  const loaded = Math.min(loadedIds.size, MAX_POOL);
+  // Прогресс загрузки стартового пула считаем по его размеру
+  const loaded = Math.min(pool.length, MAX_POOL);
   setProgress(Math.min(100, loaded / MAX_POOL * 100));
   const sub = document.getElementById('loading-sub');
   if (sub) sub.textContent = t('loaded', { n: loaded, total: MAX_POOL });
   updatePoolCounter();
-  if (gameStarted) rebuildQueue();
-  else tryStartGame();
+  if (!gameStarted) tryStartGame();
 }
 
-// Удаляем сыгравшую игру из пула и запускаем пополнение
+// Убираем сыгравшую игру из пула; её ID снова доступен источнику.
 function retireCard(index) {
+  const rec = pool[index];
+  if (rec) poolIds.delete(rec.id); // вернуть в источник для будущего добора
   pool.splice(index, 1);
-  // После splice индексы idx1/idx2 уже указывают на новые позиции —
-  // корректируем только те, что сместились из-за удаления
+  // После splice корректируем только индексы, что сместились из-за удаления
   if (idx1 > index) idx1--;
   if (idx2 > index) idx2--;
   // idx1/idx2 не могут быть равны index — retire всегда вызывается
-  // со старым retireIdx который уже не является ни idx1 ни idx2
-  rebuildQueue();
-  if (pool.length < MAX_POOL && allIds.length > 0) refillPool();
+  // со старым retireIdx, который уже не является ни idx1, ни idx2
+  if (pool.length < MAX_POOL) refillPool();
   updatePoolCounter();
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   QUEUE
+   PICK — случайная игра из пула (по индексу), не равная текущей
 ═══════════════════════════════════════════════════════════════ */
-function rebuildQueue() {
-  queue = pool.map((_, i) => i);
-  shuffle(queue);
-  queuePos = 0;
-}
-
 function nextIndex(excludeIdx) {
   if (pool.length <= 1) return 0;
-  let tries = 0;
-  while (true) {
-    if (queuePos >= queue.length) rebuildQueue();
-    const r = queue[queuePos++];
-    if (r !== excludeIdx) return r;
-    if (++tries > pool.length * 2) {
-      let r2;
-      do { r2 = Math.floor(Math.random() * pool.length); } while (r2 === excludeIdx);
-      return r2;
-    }
-  }
+  let r;
+  do { r = Math.floor(Math.random() * pool.length); } while (r === excludeIdx);
+  return r;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1327,7 +1314,6 @@ function tryStartGame() {
   gameStarted = true;
   document.getElementById('loading').style.display = 'none';
 
-  rebuildQueue();
   idx1 = nextIndex(-1);
   idx2 = nextIndex(idx1);
 
