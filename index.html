@@ -330,8 +330,10 @@
       justify-content: center;
     }
     .card-cat {
-      font-size: clamp(10px, 1vw, 12px);
-      color: var(--text-dim);
+      font-size: clamp(11px, 1.3vw, 14px);
+      color: #aeb8d8;       /* ярче var(--text-dim) — категория читается */
+      font-weight: 600;
+      line-height: 1.35;
       text-align: center;
       min-height: 1.3em;
     }
@@ -360,11 +362,12 @@
     /* Время */
     .card-time-wrap { text-align: center; padding: 6px 4px 2px; }
     .card-time {
-      font-size: clamp(15px, 2vw, 22px);
+      font-size: clamp(22px, 3vw, 32px);
       font-weight: 800;
       font-variant-numeric: tabular-nums;
       display: inline-block;
-      word-break: break-all;
+      white-space: nowrap;     /* было break-all — рвало "1:23:45" */
+      letter-spacing: .5px;
     }
     .card-time.reveal {
       animation: timeReveal .4s cubic-bezier(.34,1.56,.64,1);
