@@ -1073,20 +1073,6 @@ async function apiGet(url, maxRetry = 3) {
   return null;
 }
 
-async function imageExists(url) {
-  if (!url) return false;
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload  = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = url;
-  });
-}
-
-function buildCoverURL(apiId) {
-  return `https://www.speedrun.com/static/game/${apiId}/cover?v=1`;
-}
-
 /* ═══════════════════════════════════════════════════════════════
    FETCH ONE GAME
 ═══════════════════════════════════════════════════════════════ */
@@ -1102,45 +1088,30 @@ async function fetchOneBySlug(slug) {
 
   const apiId    = data.id;
   const gameName = (data.names && data.names.international) || slug;
-  let   coverURL = (data.assets?.['cover-large']?.uri)
-                || (data.assets?.['cover-medium']?.uri)
-                || buildCoverURL(apiId);
-
   const BLANK_COVER = 'https://www.speedrun.com/images/blankcover.png';
 
-  const [catResult] = await Promise.all([
-    (async () => {
-      const jc = await apiGet(`${API_BASE}/games/${apiId}/categories?miscellaneous=no`);
-      if (!jc || !jc.data) return null;
-      for (const cat of jc.data)
-        if (cat.type === 'per-game') return { id: cat.id, name: cat.name };
-      if (jc.data.length > 0) return { id: jc.data[0].id, name: jc.data[0].name };
-      return null;
-    })(),
-    (async () => {
-      // Пропускаем blank cover
-      if (coverURL === BLANK_COVER) { coverURL = buildCoverURL(apiId); }
-      // Проверяем через Image (без fetch — обходит CORS/403)
-      const ok = await imageExists(coverURL);
-      if (!ok) {
-        const fb = buildCoverURL(apiId);
-        if (fb !== coverURL) {
-          const ok2 = await imageExists(fb);
-          coverURL = ok2 ? fb : '';
-        } else {
-          coverURL = '';
-        }
-      }
-      // Если coverURL пуст — значит обложки нет совсем, пропустим игру
-    })()
-  ]);
-
-  if (!catResult) { console.warn('[skip] no cats:', slug); return null; }
-  // blank cover или недоступная обложка → пропуск
-  if (coverURL === BLANK_COVER || coverURL === '') {
-    console.warn('[skip] no valid cover:', slug);
+  // Обложку определяем ПО ОТВЕТУ API, без пробной загрузки <img>.
+  // speedrun.com отдаёт картинки с Cross-Origin-Resource-Policy, поэтому
+  // прямая проверка через Image() всегда падает (ERR_BLOCKED_BY_RESPONSE)
+  // и раньше скипала почти все игры. Саму загрузку (с фоллбэком через
+  // CORS-прокси) выполняет showCard.
+  const coverURL = (data.assets?.['cover-large']?.uri)
+                || (data.assets?.['cover-medium']?.uri)
+                || '';
+  if (!coverURL || coverURL === BLANK_COVER) {
+    console.warn('[skip] no cover:', slug);
     return null;
   }
+
+  const jc = await apiGet(`${API_BASE}/games/${apiId}/categories?miscellaneous=no`);
+  let catResult = null;
+  if (jc && jc.data) {
+    for (const cat of jc.data)
+      if (cat.type === 'per-game') { catResult = { id: cat.id, name: cat.name }; break; }
+    if (!catResult && jc.data.length > 0)
+      catResult = { id: jc.data[0].id, name: jc.data[0].name };
+  }
+  if (!catResult) { console.warn('[skip] no cats:', slug); return null; }
 
   const jl = await apiGet(
     `${API_BASE}/leaderboards/${apiId}/category/${catResult.id}?top=1`
@@ -1385,6 +1356,9 @@ function showCard(index, position, animate = false) {
   });
 
   (async () => {
+    // Прямой <img> грузится для большинства браузеров (Cloudflare их
+    // пропускает, обложка отдаётся без CORP). Прокси — фоллбэк на случай,
+    // когда прямой путь недоступен.
     if (await tryLoad(rec.image)) return;
     await tryLoad(CORS_PROXY + encodeURIComponent(rec.image));
   })();
